@@ -51,6 +51,17 @@
     mode: '0755'
   with_items: ["bin", "downloads"]
 
+- name: Download fcct
+  get_url:
+    url: "{{ download.fcct }}"
+    dest: "{{ playbook_dir }}/bin/fcct"
+    validate_certs: no
+
+- name: Make govc executable
+  file:
+    path: "{{ playbook_dir }}/bin/fcct"
+    mode: '775'
+
 - name: Download govc
   get_url:
     url: "{{ download.govc }}"
