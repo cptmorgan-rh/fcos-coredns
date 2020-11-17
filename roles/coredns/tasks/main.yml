@@ -1,0 +1,68 @@
+---
+- name: Delete coredns vm if redeploy defined
+  command: "govc vm.destroy {{ coredns_vm.name }}" # noqa 301
+  when: redeploy is defined
+
+- name: Create Temp Build Directory for coredns
+  tempfile:
+    state: directory
+    suffix: coredns
+  register: coredns_tempdir
+
+- name: Create Corefile from template in "{{ coredns_tempdir.path }}"/
+  template:
+    src: templates/Corefile.j2
+    dest: "{{ coredns_tempdir.path }}/Corefile"
+    mode: 0664
+
+- name: Create forward.db from template in "{{ coredns_tempdir.path }}"/
+  template:
+    src: templates/forward.db.j2
+    dest: "{{ coredns_tempdir.path }}/forward.db"
+    mode: 0664
+
+- name: Create coredns.ign in "{{ coredns_tempdir.path }}"/
+  template:
+    src: templates/coredns.ign.j2
+    dest: "{{ coredns_tempdir.path }}/coredns.ign"
+    mode: 0664
+
+- name: Set coredns_ign Fact
+  set_fact:
+    coredns_ign: "{{ lookup('file', '{{ coredns_tempdir.path }}/coredns.ign') | b64encode }}" # noqa 207
+
+- name: Create coredns VMs from the template
+  vmware_guest:
+    hostname: "{{ vcenter.ip }}"
+    username: "{{ vcenter.admin_username }}"
+    password: "{{ vcenter.admin_password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    validate_certs: no
+    folder: "{{ vcenter.folder_absolute_path }}"
+    name: "{{ coredns_vm.name }}"
+    state: "{{ vcenter.vm_power_state }}"
+    template: "FCOS-{{ template_name }}"
+    disk:
+    - size_gb: "{{ coredns_vm.disk_gb }}"
+      type: thin
+      datastore: "{{ vcenter.datastore }}"
+    hardware:
+      memory_mb: "{{ coredns_vm.memory_mb }}"
+      num_cpus: "{{ coredns_vm.num_cpus }}"
+      memory_reservation_lock: True
+    networks:
+    - name: "{{ vcenter.network }}"
+    wait_for_ip_address: no
+    customvalues:
+     - key: guestinfo.ignition.config.data
+       value: "{{ coredns_ign }}"
+     - key: guestinfo.ignition.config.data.encoding
+       value: base64
+     - key: guestinfo.afterburn.initrd.network-kargs
+       value: "ip={{ coredns_vm.ipaddr }}::{{ coredns_vm.gateway }}:{{ coredns_vm.netmask }}:{{ coredns_vm.name }}:ens192:off:{{ coredns_vm.dns }}" # noqa 204
+
+- name: Remove {{ coredns_tempdir.path }} and contents
+  file:
+    path: "{{ coredns_tempdir.path }}"
+    state: absent
+  when: coredns_tempdir.path is defined

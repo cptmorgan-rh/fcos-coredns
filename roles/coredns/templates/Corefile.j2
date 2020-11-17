@@ -1,0 +1,13 @@
+.:53 {
+    health :8080 {
+        lameduck 1s
+    }
+    forward . {{ config.upstream_dns1 }} {{ config.upstream_dns2 }}
+    errors
+}
+
+{{ config.domain_name }}:53 {
+    file /root/forward.db
+    log
+    errors
+}

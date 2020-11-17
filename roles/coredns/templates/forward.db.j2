@@ -1,0 +1,22 @@
+$ORIGIN .
+$TTL 43200;
+{{ config.domain_name }}         IN SOA  ns1.{{ config.domain_name }}. hostmaster.{{ config.domain_name }}. (
+                                {{ dns_serial }} ; serial
+                                60         ; refresh (1 minute)
+                                15         ; retry (15 seconds)
+                                1800       ; expire (30 minutes)
+                                10         ; minimum (10 seconds)
+                                )
+                        NS      ns1.{{ config.domain_name }}.
+$ORIGIN {{ config.domain_name }}.
+ns1  IN A  {{ coredns_vm.ipaddr }}
+
+{% for a_record in a_records %}
+{{ a_record.name }}  IN A  {{ a_record.ipaddr }}
+{% endfor %}
+
+{%if cname_records | type_debug != "NoneType" %}
+{% for cname in cname_records %}
+{{ cname.name }}  IN CNAME  {{ cname.alias }}
+{% endfor %}
+{% endif %}

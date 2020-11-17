@@ -1,0 +1,37 @@
+config:
+  installer_ssh_key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+  domain_name: example.com
+  upstream_dns1: 8.8.8.8
+  upstream_dns2: 8.8.4.4
+vcenter:
+  ip: vcenter.example.com
+  datastore: ds0
+  network: 10.0.0.x-24
+  admin_username: administrator@vsphere.local
+  admin_password: Password1!
+  datacenter: LAB
+  folder_absolute_path: /LAB/vm/
+  vm_power_state: poweredon
+download:
+  fcos_stream: stable
+  govc: https://github.com/vmware/govmomi/releases/download/v0.23.0/govc_linux_amd64.gz
+coredns_vm:
+  name: CoreDNS
+  ipaddr: 10.0.0.41
+  gateway: 10.0.0.1
+  netmask: 255.255.255.0
+  dns: 8.8.8.8
+  network_interface_name: ens192
+  num_cpus: 1
+  memory_mb: 2048
+  disk_gb: 16
+a_records:
+  - { name: "coredns", ipaddr: "10.0.0.41" }
+  - { name: "gitlab", ipaddr: "10.0.0.42" }
+  - { name: "pihole", ipaddr: "10.0.0.70" }
+  - { name: "adgaurd", ipaddr: "10.0.0.71" }
+  - { name: "unifi", ipaddr: "10.0.0.13" }
+  - { name: "plex", ipaddr: "10.0.0.14" }
+cname_records:
+  - { name: "radarr", alias: "plex" }
+  - { name: "sonarr", alias: "plex" }
