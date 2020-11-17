@@ -9,27 +9,30 @@
     suffix: coredns
   register: coredns_tempdir
 
-- name: Create Corefile from template in "{{ coredns_tempdir.path }}"/
+- name: Create Corefile from template in "{{ coredns_tempdir.path }}"
   template:
-    src: templates/Corefile.j2
+    src: Corefile.j2
     dest: "{{ coredns_tempdir.path }}/Corefile"
     mode: 0664
 
-- name: Create forward.db from template in "{{ coredns_tempdir.path }}"/
+- name: Create forward.db from template in "{{ coredns_tempdir.path }}"
   template:
-    src: templates/forward.db.j2
+    src: forward.db.j2
     dest: "{{ coredns_tempdir.path }}/forward.db"
     mode: 0664
 
-- name: Create coredns.ign in "{{ coredns_tempdir.path }}"/
+- name: Create coredns.fcc in "{{ coredns_tempdir.path }}"
   template:
-    src: templates/coredns.ign.j2
-    dest: "{{ coredns_tempdir.path }}/coredns.ign"
+    src: coredns.fcc.j2
+    dest: "{{ coredns_tempdir.path }}/coredns.fcc"
     mode: 0664
+
+- name: Create CoreDNS transpiled ignition file
+  shell: "{{ playbook_dir }}/bin/fcct -d {{ coredns_tempdir.path }} --pretty --strict < {{ coredns_tempdir.path }}/coredns.fcc > {{ coredns_tempdir.path }}/transpiled_config.ign" # noqa 301
 
 - name: Set coredns_ign Fact
   set_fact:
-    coredns_ign: "{{ lookup('file', '{{ coredns_tempdir.path }}/coredns.ign') | b64encode }}" # noqa 207
+    coredns_ign: "{{ lookup('file', '{{ coredns_tempdir.path }}/transpiled_config.ign') | b64encode }}" # noqa 207
 
 - name: Create coredns VMs from the template
   vmware_guest:
