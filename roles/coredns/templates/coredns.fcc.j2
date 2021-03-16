@@ -1,5 +1,5 @@
 variant: fcos
-version: 1.1.0
+version: 1.2.0
 passwd:
   users:
     - name: core
@@ -17,6 +17,21 @@ storage:
       mode: 0644
 systemd:
   units:
+    - name: postinstall.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Post Installation
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        TimeoutStartSec=0
+        ExecStart=/bin/bash -c "/bin/rpm-ostree install open-vm-tools && reboot || /bin/true"
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: coredns.service
       enabled: true
       contents: |
@@ -24,6 +39,7 @@ systemd:
         Description=coredns
         After=network-online.target
         Wants=network-online.target
+
         [Service]
         TimeoutStartSec=0
         ExecStartPre=-/bin/podman kill coredns
@@ -34,5 +50,6 @@ systemd:
          --privileged \
          -v /opt/coredns/:/root/:Z \
         docker.io/cloudctl/coredns -conf /root/Corefile
+        
         [Install]
         WantedBy=multi-user.target
